@@ -1,0 +1,21 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:latest
+    container_name: ariadnes-trade-db
+    environment:
+      POSTGRES_USER: ariadnes
+      POSTGRES_PASSWORD: yourpassword
+      POSTGRES_DB: ariadnestrade
+    ports:
+      - "6543:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ariadnes_network
+
+volumes:
+  postgres_data:
+
+networks:
+  ariadnes_network:

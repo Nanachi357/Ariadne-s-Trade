@@ -1,4 +1,4 @@
-package org.example.ariadnestrade;
+package com.freelance.nanachi357.ariadnestrade;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
