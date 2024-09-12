@@ -91,10 +91,16 @@
             <version>6.1.0</version>
             <scope>provided</scope>
         </dependency>
-
-
-
-
+        <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.freelance.Nanachi357</groupId>
+            <artifactId>DeribitJavaConnector</artifactId>
+            <version>0.0.1</version>
+            <scope>compile</scope>
+        </dependency>
 
 
     </dependencies>
