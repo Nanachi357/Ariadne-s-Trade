@@ -8,6 +8,7 @@ import com.freelance.nanachi357.ariadnestrade.model.Instrument;
 import com.freelance.nanachi357.ariadnestrade.repository.InstrumentRepository;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 @Service
 public class InstrumentService {
@@ -33,21 +34,29 @@ public class InstrumentService {
                 });
     }
 
-    public Mono<Instrument> fetchAndSaveInstrumentIfNotFound(String instrumentName) {
-        // First, check if the instrument is already in the database
-        return Mono.justOrEmpty(instrumentRepository.findByInstrumentName(instrumentName))
-                // If it's not found, call the Deribit API
-                .switchIfEmpty(
-                        getInstrument.fetchInstrument(instrumentName)
-                                .flatMap(instrumentDTO -> {
-                                    // Convert the DTO to an entity and save it in the database
-                                    Instrument instrument = converter.convertToInstrumentEntity(instrumentDTO.getResult());
-                                    instrumentRepository.save(instrument);
-                                    return Mono.just(instrument);
-                                })
-                )
+    public Mono<Instrument> fetchAndSaveInstrumentIfNotFound(String currency) {
+        // Log before fetching from DB
+        System.out.println("Looking for instrument in the database: " + currency);
+
+        return Mono.fromCallable(() -> instrumentRepository.findByBaseCurrency(currency))
+                .subscribeOn(Schedulers.boundedElastic())
+                .flatMap(optionalInstrument -> {
+                    if (optionalInstrument.isPresent()) {
+                        return Mono.just(optionalInstrument.get());
+                    }
+                    // Log before fetching from API
+                    System.out.println("Instrument not found, fetching from Deribit API: " + currency);
+                    return getInstrument.fetchInstrument(currency)
+                            .flatMap(instrumentDTO -> {
+                                // Log before saving
+                                System.out.println("Fetched from API: " + instrumentDTO.getResult());
+                                Instrument instrument = converter.convertToInstrumentEntity(instrumentDTO.getResult());
+                                instrumentRepository.save(instrument);
+                                return Mono.just(instrument);
+                            });
+                })
                 .onErrorResume(e -> {
-                    // Handle errors gracefully, log them
+                    // Handle errors gracefully
                     System.err.println("Error fetching instrument: " + e.getMessage());
                     return Mono.empty();
                 });

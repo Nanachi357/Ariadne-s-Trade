@@ -4,11 +4,9 @@ import com.freelance.Nanachi357.DeribitJavaConnector.service.GetLastTradesByCurr
 import com.freelance.nanachi357.ariadnestrade.api.ApiToEntityConverter;
 import com.freelance.nanachi357.ariadnestrade.model.Instrument;
 import com.freelance.nanachi357.ariadnestrade.model.Trade;
-import com.freelance.nanachi357.ariadnestrade.repository.InstrumentRepository;
 import com.freelance.nanachi357.ariadnestrade.repository.TradeRepository;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -19,29 +17,21 @@ public class TradeService {
     private final GetLastTradesByCurrencyAndTime getLastTradesByCurrencyAndTime;
     private final ApiToEntityConverter converter;
     private final TradeRepository tradeRepository;
-    private final InstrumentRepository instrumentRepository;
+    private final InstrumentService instrumentService;
 
     public TradeService(GetLastTradesByCurrencyAndTime getLastTradesByCurrencyAndTime,
                         ApiToEntityConverter converter,
                         TradeRepository tradeRepository,
-                        InstrumentRepository instrumentRepository) {
+                        InstrumentService instrumentService) {
         this.getLastTradesByCurrencyAndTime = getLastTradesByCurrencyAndTime;
         this.converter = converter;
         this.tradeRepository = tradeRepository;
-        this.instrumentRepository = instrumentRepository;
+        this.instrumentService = instrumentService;
     }
 
     public Mono<List<Trade>> fetchAndSaveTrades(String currency, long startTimestamp, long endTimestamp, int count) {
-        // Offload the blocking call to a boundedElastic scheduler
-        return Mono.fromCallable(() -> instrumentRepository.findByInstrumentName(currency))
-                .subscribeOn(Schedulers.boundedElastic())  // Switch to a scheduler for blocking calls
-                .flatMap(optionalInstrument -> {
-                    if (optionalInstrument.isEmpty()) {
-                        return Mono.error(new RuntimeException("Instrument not found: " + currency));
-                    }
-                    Instrument instrument = optionalInstrument.get();
-                    return fetchTradesFromApiAndSave(currency, startTimestamp, endTimestamp, count, instrument);
-                })
+        return instrumentService.fetchAndSaveInstrumentIfNotFound(currency) // Use InstrumentService
+                .flatMap(instrument -> fetchTradesFromApiAndSave(currency, startTimestamp, endTimestamp, count, instrument))
                 .onErrorResume(e -> {
                     // Log error and return empty Mono
                     System.err.println("Error fetching trades: " + e.getMessage());
@@ -51,16 +41,21 @@ public class TradeService {
 
     private Mono<List<Trade>> fetchTradesFromApiAndSave(String currency, long startTimestamp, long endTimestamp, int count, Instrument instrument) {
         return getLastTradesByCurrencyAndTime.fetchLastTrades(currency, startTimestamp, endTimestamp, count)
-                .map(tradesResponseDTO -> {
-                    // Extract trades from the API response
+                .doOnNext(tradesResponseDTO -> {
+                    System.out.println("API Response: " + tradesResponseDTO);
+                    if (tradesResponseDTO.getResult().getTrades().isEmpty()) {
+                        System.out.println("No trades found in the API response");
+                    }
+                })
+                .flatMap(tradesResponseDTO -> {
+                    // Convert DTO to entity and save to repository
                     List<Trade> trades = tradesResponseDTO.getResult().getTrades().stream()
                             .map(tradeDTO -> converter.convertToTradeEntity(tradeDTO, instrument)) // Convert DTO to entity
                             .collect(Collectors.toList());
 
-                    // Save all trades to the repository
+                    // Save trades
                     tradeRepository.saveAll(trades);
-
-                    return trades; // Return the saved trades
+                    return Mono.just(trades);
                 });
     }
 }
