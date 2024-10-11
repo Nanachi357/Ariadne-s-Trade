@@ -9,4 +9,5 @@ public interface InstrumentRepository extends JpaRepository<Instrument, Long> {
     // Custom query method to find an instrument by its name
     Optional<Instrument> findByInstrumentName(String instrumentName);
     Optional<Instrument> findByBaseCurrency(String baseCurrency);
+    boolean existsByInstrumentName(String instrumentName);
 }

@@ -7,6 +7,7 @@ import com.freelance.nanachi357.ariadnestrade.model.Trade;
 import com.freelance.nanachi357.ariadnestrade.repository.TradeRepository;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -42,20 +43,22 @@ public class TradeService {
     private Mono<List<Trade>> fetchTradesFromApiAndSave(String currency, long startTimestamp, long endTimestamp, int count, Instrument instrument) {
         return getLastTradesByCurrencyAndTime.fetchLastTrades(currency, startTimestamp, endTimestamp, count)
                 .doOnNext(tradesResponseDTO -> {
+                    // Log the API response
                     System.out.println("API Response: " + tradesResponseDTO);
                     if (tradesResponseDTO.getResult().getTrades().isEmpty()) {
                         System.out.println("No trades found in the API response");
                     }
                 })
                 .flatMap(tradesResponseDTO -> {
-                    // Convert DTO to entity and save to repository
+                    // Convert DTO to entity
                     List<Trade> trades = tradesResponseDTO.getResult().getTrades().stream()
                             .map(tradeDTO -> converter.convertToTradeEntity(tradeDTO, instrument)) // Convert DTO to entity
                             .collect(Collectors.toList());
 
-                    // Save trades
-                    tradeRepository.saveAll(trades);
-                    return Mono.just(trades);
+                    // Offload blocking save to a bounded elastic scheduler
+                    return Mono.fromCallable(() -> tradeRepository.saveAll(trades))
+                            .subscribeOn(Schedulers.boundedElastic())  // Ensure non-blocking save
+                            .thenReturn(trades); // Return the saved trades
                 });
     }
 }
