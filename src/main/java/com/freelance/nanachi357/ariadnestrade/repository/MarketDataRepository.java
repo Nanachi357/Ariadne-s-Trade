@@ -1,35 +1,30 @@
 package com.freelance.nanachi357.ariadnestrade.repository;
 
 import com.freelance.nanachi357.ariadnestrade.model.Trade;
-import com.freelance.nanachi357.ariadnestrade.model.Instrument;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
-
-import java.time.LocalDateTime;
-import java.util.List;
+import reactor.core.publisher.Flux;
+import org.springframework.validation.annotation.Validated;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import java.time.Instant;
 
 @Repository
-public interface MarketDataRepository extends JpaRepository<Trade, Long> {
+@Validated
+public interface MarketDataRepository extends R2dbcRepository<Trade, Long> {
 
-    @NonNull
-    // Fetch trades by Instrument
-    List<Trade> findByInstrument(Instrument instrument);
-
-    @NonNull
     // Fetch trades by instrument ID
-    List<Trade> findByInstrument_Id(Long instrumentId);
+    Flux<Trade> findByInstrumentId(@NotNull @Min(1) Long instrumentId);
 
-    @NonNull
     // Fetch trades with price greater than specified value
-    List<Trade> findByPriceGreaterThan(Double price);
+    Flux<Trade> findByPriceGreaterThan(@NotNull @Min(0) Double price);
 
-    @NonNull
     // Fetch trades by timestamp range
-    List<Trade> findByTimestampBetween(LocalDateTime start, LocalDateTime end);
+    Flux<Trade> findByTimestampBetween(@NotNull Instant start, @NotNull Instant end);
 
-    @NonNull
-    @Override
     // Fetch all trades
-    List<Trade> findAll();
+    @Override
+    @NonNull
+    Flux<Trade> findAll();
 }

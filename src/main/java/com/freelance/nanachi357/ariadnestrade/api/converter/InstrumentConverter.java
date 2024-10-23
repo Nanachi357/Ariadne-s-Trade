@@ -1,16 +1,13 @@
-package com.freelance.nanachi357.ariadnestrade.api;
+package com.freelance.nanachi357.ariadnestrade.api.converter;
 
 import com.freelance.Nanachi357.DeribitJavaConnector.dto.InstrumentDTO;
-import com.freelance.Nanachi357.DeribitJavaConnector.dto.TradeDTO;
 import com.freelance.nanachi357.ariadnestrade.model.Instrument;
-import com.freelance.nanachi357.ariadnestrade.model.Trade;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
-import java.time.ZoneId;
 
 @Component
-public class ApiToEntityConverter {
+public class InstrumentConverter {
 
     // Convert InstrumentDTO to Instrument entity
     public Instrument convertToInstrumentEntity(InstrumentDTO dto) {
@@ -30,21 +27,31 @@ public class ApiToEntityConverter {
         return instrument;
     }
 
-    // Convert TradeDTO to Trade entity and associate it with an Instrument
-    public Trade convertToTradeEntity(TradeDTO dto, Instrument instrument) {
-        Trade trade = new Trade();
-        trade.setTradeSeq(dto.getTradeSeq());
-        trade.setTradeId(dto.getTradeId());
-        trade.setTimestamp(convertLongToInstant(dto.getTimestamp())); // Changed to use Instant for consistency
-        trade.setPrice(dto.getPrice());
-        trade.setAmount(dto.getAmount());
-        trade.setDirection(dto.getDirection());
-        trade.setInstrumentId(instrument.getId()); // Updated to use instrumentId instead of Instrument reference
-        return trade;
+    // Convert Instrument entity to InstrumentDTO
+    public InstrumentDTO convertToInstrumentDTO(Instrument instrument) {
+        InstrumentDTO dto = new InstrumentDTO();
+        dto.setInstrumentName(instrument.getInstrumentName());
+        dto.setBaseCurrency(instrument.getBaseCurrency());
+        dto.setQuoteCurrency(instrument.getQuoteCurrency());
+        dto.setContractSize(instrument.getContractSize());
+        dto.setIsActive(instrument.getIsActive());
+        dto.setCreationTimestamp(convertInstantToLong(instrument.getCreationTimestamp()));
+        dto.setExpirationTimestamp(convertInstantToLong(instrument.getExpirationTimestamp()));
+        dto.setMakerCommission(instrument.getMakerCommission());
+        dto.setTakerCommission(instrument.getTakerCommission());
+        dto.setSettlementCurrency(instrument.getSettlementCurrency());
+        dto.setMinTradeAmount(instrument.getMinTradeAmount());
+        // Add other fields if needed
+        return dto;
     }
 
     // Helper method to convert Long timestamp to Instant
     private Instant convertLongToInstant(Long timestamp) {
         return (timestamp != null) ? Instant.ofEpochMilli(timestamp) : null;
+    }
+
+    // Helper method to convert Instant to Long timestamp
+    private Long convertInstantToLong(Instant instant) {
+        return (instant != null) ? instant.toEpochMilli() : null;
     }
 }

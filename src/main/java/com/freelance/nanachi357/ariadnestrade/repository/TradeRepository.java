@@ -1,9 +1,15 @@
 package com.freelance.nanachi357.ariadnestrade.repository;
 
 import com.freelance.nanachi357.ariadnestrade.model.Trade;
-import org.springframework.data.jpa.repository.JpaRepository;
-import java.util.List;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
+import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Flux;
+import org.springframework.lang.NonNull;
 
-public interface TradeRepository extends JpaRepository<Trade, Long> {
-    List<Trade> findByInstrument_Id(Long instrumentId); // Custom method to find trades by instrument ID
+@Repository
+public interface TradeRepository extends R2dbcRepository<Trade, Long> {
+
+    // Custom method to find trades by instrument ID
+    @NonNull
+    Flux<Trade> findByInstrumentId(Long instrumentId);
 }
