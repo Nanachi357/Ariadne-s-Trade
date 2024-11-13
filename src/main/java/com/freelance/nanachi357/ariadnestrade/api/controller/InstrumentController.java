@@ -3,10 +3,7 @@ package com.freelance.nanachi357.ariadnestrade.api.controller;
 import com.freelance.nanachi357.ariadnestrade.api.service.InstrumentService;
 import com.freelance.Nanachi357.DeribitJavaConnector.dto.InstrumentDTO;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -35,5 +32,12 @@ public class InstrumentController {
             @RequestParam(required = false) String kind,
             @RequestParam(required = false, defaultValue = "false") boolean expired) {
         return instrumentService.fetchInstruments(currency, kind, expired);
+    }
+
+    // Method to evict an instrument from the cache
+    @DeleteMapping("/api/instrument/{instrumentName}")
+    public Mono<Void> evictInstrument(@PathVariable @NotBlank(message = "Instrument name cannot be blank") String instrumentName) {
+        instrumentService.evictInstrumentFromCache(instrumentName); // Clear cache for the specific instrument
+        return Mono.empty(); // No need for further logic since we're not deleting from a data source
     }
 }
