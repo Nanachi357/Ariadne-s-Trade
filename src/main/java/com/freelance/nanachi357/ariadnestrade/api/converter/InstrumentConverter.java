@@ -1,13 +1,23 @@
 package com.freelance.nanachi357.ariadnestrade.api.converter;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.freelance.Nanachi357.DeribitJavaConnector.dto.InstrumentDTO;
 import com.freelance.nanachi357.ariadnestrade.model.Instrument;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
+import java.util.List;
 
 @Component
 public class InstrumentConverter {
+
+    private final ObjectMapper objectMapper;
+
+    public InstrumentConverter(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     // Convert InstrumentDTO to Instrument entity
     public Instrument convertToInstrumentEntity(InstrumentDTO dto) {
@@ -43,6 +53,26 @@ public class InstrumentConverter {
         dto.setMinTradeAmount(instrument.getMinTradeAmount());
         // Add other fields if needed
         return dto;
+    }
+
+    // Convert InstrumentDTO to JSON string
+    public String convertToJson(InstrumentDTO dto) throws JsonProcessingException {
+        return objectMapper.writeValueAsString(dto);
+    }
+
+    // Convert JSON string to InstrumentDTO
+    public InstrumentDTO convertFromJson(String json) throws JsonProcessingException {
+        return objectMapper.readValue(json, InstrumentDTO.class);
+    }
+
+    // Convert JSON string to a list of InstrumentDTO
+    public List<InstrumentDTO> convertFromJsonArray(String json) throws JsonProcessingException {
+        return objectMapper.readValue(json, new TypeReference<List<InstrumentDTO>>() {});
+    }
+
+    // Convert a list of InstrumentDTO to a JSON string
+    public String convertToJsonArray(List<InstrumentDTO> instruments) throws JsonProcessingException {
+        return objectMapper.writeValueAsString(instruments);
     }
 
     // Helper method to convert Long timestamp to Instant
